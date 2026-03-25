@@ -722,6 +722,33 @@ button{cursor:pointer;font-family:inherit}
     currentProd: 'kanab',
   };
 
+  /* ── localStorage 영구 저장/로드 ── */
+  const LS_KEY = 'boryung_portal_data';
+
+  function lsSave() {
+    try {
+      const data = {
+        links:         STATE.links,
+        symps:         STATE.symps,
+        userPassword:  STATE.userPassword,
+        adminPassword: STATE.adminPassword,
+      };
+      localStorage.setItem(LS_KEY, JSON.stringify(data));
+    } catch(e) { console.warn('localStorage 저장 실패:', e); }
+  }
+
+  function lsLoad() {
+    try {
+      const raw = localStorage.getItem(LS_KEY);
+      if (!raw) return;
+      const data = JSON.parse(raw);
+      if (data.links)         STATE.links         = data.links;
+      if (data.symps)         STATE.symps         = data.symps;
+      if (data.userPassword)  STATE.userPassword  = data.userPassword;
+      if (data.adminPassword) STATE.adminPassword = data.adminPassword;
+    } catch(e) { console.warn('localStorage 로드 실패:', e); }
+  }
+
   /* ── Google Sheets fetch ── */
   async function gsFetch(params) {
     if (!SCRIPT_URL || SCRIPT_URL === 'YOUR_APPS_SCRIPT_URL_HERE')
@@ -741,12 +768,13 @@ button{cursor:pointer;font-family:inherit}
   /* ── 데이터 로드 ── */
   async function loadLinks() {
     const r = await gsFetch({ action:'getLinks' });
-    if (r.ok && r.links) STATE.links = r.links;
+    if (r.ok && r.links) { STATE.links = r.links; lsSave(); }
+    // SCRIPT_URL 없으면 lsLoad()로 이미 복원된 상태
   }
 
   async function loadSymps() {
     const r = await gsFetch({ action:'getSymps' });
-    if (r.ok && r.symps) STATE.symps = r.symps;
+    if (r.ok && r.symps) { STATE.symps = r.symps; lsSave(); }
     renderSympGrid();
   }
 
@@ -755,6 +783,7 @@ button{cursor:pointer;font-family:inherit}
     if (r.ok && r.config) {
       if (r.config.user_password)  STATE.userPassword  = r.config.user_password;
       if (r.config.admin_password) STATE.adminPassword = r.config.admin_password;
+      lsSave();
     }
   }
 
@@ -947,8 +976,14 @@ button{cursor:pointer;font-family:inherit}
   async function saveSingleLink(key) {
     const url = document.getElementById('edit-notebooklm').value.trim();
     STATE.links[key] = { url, label:'NotebookLM' };
-    const r = await saveAllLinksToSheet();
-    if (r) toast('NotebookLM 링크가 저장되었습니다.','success');
+    const hasScript = SCRIPT_URL && SCRIPT_URL !== 'YOUR_APPS_SCRIPT_URL_HERE';
+    if (hasScript) {
+      const r = await saveAllLinksToSheet();
+      if (r) toast('NotebookLM 링크가 저장되었습니다 ✓', 'success');
+    } else {
+      lsSave();
+      toast('NotebookLM 링크가 저장됐습니다 ✓', 'success');
+    }
   }
 
   /* ── 파일 매니저 ── */
@@ -1026,12 +1061,12 @@ button{cursor:pointer;font-family:inherit}
   async function saveAllLinks() {
     // NotebookLM
     STATE.links['notebooklm'] = { url: document.getElementById('edit-notebooklm').value.trim(), label:'NotebookLM' };
-    // 파일 링크
+    // 파일 링크 (빈 값도 허용)
     FILE_DEFS.forEach(f => {
       const inp = document.getElementById(`file-url-${f.key}`);
       if (inp) STATE.links[f.key] = { url: inp.value.trim(), label: f.label };
     });
-    // 심포지엄
+    // 심포지엄 (빈 값도 허용)
     STATE.symps.forEach(s => {
       const n = document.getElementById(`symp-name-${s.id}`);
       const u = document.getElementById(`symp-url-${s.id}`);
@@ -1040,23 +1075,34 @@ button{cursor:pointer;font-family:inherit}
     });
     STATE.symps = STATE.symps.filter(s => s.name || s.url);
 
-    const r1 = await saveAllLinksToSheet();
-    const r2 = await saveSympsToSheet();
-    if (r1 && r2) {
-      toast('모든 링크와 심포지엄 정보가 저장되었습니다! ✓','success');
-      renderAllPanels();
+    // 항상 로컬(STATE)에 먼저 저장 후 화면 반영
+    renderAllPanels();
+    renderSympGridAll();
+    lsSave(); // localStorage 영구 저장
+
+    // SCRIPT_URL 설정된 경우에만 Sheets에 저장 시도
+    const hasScript = SCRIPT_URL && SCRIPT_URL !== 'YOUR_APPS_SCRIPT_URL_HERE';
+    if (hasScript) {
+      const r1 = await saveAllLinksToSheet();
+      const r2 = await saveSympsToSheet();
+      if (r1 && r2) {
+        toast('저장 완료! Google Sheets에 반영됐습니다 ✓', 'success');
+      }
+    } else {
+      // localStorage에 영구 저장
+      toast('저장 완료! ✓ (브라우저에 영구 저장됨)', 'success');
     }
   }
 
   async function saveAllLinksToSheet() {
     const r = await gsFetch({ action:'setLinks', links: JSON.stringify(STATE.links) });
-    if (!r.ok) { toast('링크 저장 실패: '+(r.error||''),'error'); return false; }
+    if (!r.ok) { toast('링크 저장 실패: '+(r.error||''), 'error'); return false; }
     return true;
   }
 
   async function saveSympsToSheet() {
     const r = await gsFetch({ action:'setSymps', symps: JSON.stringify(STATE.symps) });
-    if (!r.ok) { toast('심포지엄 저장 실패: '+(r.error||''),'error'); return false; }
+    if (!r.ok) { toast('심포지엄 저장 실패: '+(r.error||''), 'error'); return false; }
     return true;
   }
 
@@ -1065,17 +1111,33 @@ button{cursor:pointer;font-family:inherit}
     const pw1=document.getElementById('new-user-pw').value, pw2=document.getElementById('new-user-pw2').value;
     if (!pw1){toast('새 비밀번호를 입력해 주세요.','error');return}
     if (pw1!==pw2){toast('비밀번호가 일치하지 않습니다.','error');return}
-    const r=await gsFetch({action:'setConfig',key:'user_password',value:pw1});
-    if(r.ok){STATE.userPassword=pw1;document.getElementById('new-user-pw').value='';document.getElementById('new-user-pw2').value='';toast('담당자 비밀번호가 변경되었습니다.','success')}
-    else toast('변경 실패: '+(r.error||''),'error');
+    const hasScript = SCRIPT_URL && SCRIPT_URL !== 'YOUR_APPS_SCRIPT_URL_HERE';
+    if (hasScript) {
+      const r=await gsFetch({action:'setConfig',key:'user_password',value:pw1});
+      if(r.ok){STATE.userPassword=pw1;document.getElementById('new-user-pw').value='';document.getElementById('new-user-pw2').value='';toast('담당자 비밀번호가 변경되었습니다.','success')}
+      else toast('변경 실패: '+(r.error||''),'error');
+    } else {
+      STATE.userPassword=pw1;
+      document.getElementById('new-user-pw').value='';document.getElementById('new-user-pw2').value='';
+      lsSave();
+      toast('담당자 비밀번호가 변경됐습니다 ✓','success');
+    }
   }
   async function changeAdminPassword() {
     const cur=document.getElementById('cur-admin-pw').value, nw=document.getElementById('new-admin-pw').value;
     if(cur!==STATE.adminPassword){toast('현재 비밀번호가 올바르지 않습니다.','error');return}
     if(!nw){toast('새 비밀번호를 입력해 주세요.','error');return}
-    const r=await gsFetch({action:'setConfig',key:'admin_password',value:nw});
-    if(r.ok){STATE.adminPassword=nw;document.getElementById('cur-admin-pw').value='';document.getElementById('new-admin-pw').value='';toast('관리자 비밀번호가 변경되었습니다.','success')}
-    else toast('변경 실패: '+(r.error||''),'error');
+    const hasScript = SCRIPT_URL && SCRIPT_URL !== 'YOUR_APPS_SCRIPT_URL_HERE';
+    if (hasScript) {
+      const r=await gsFetch({action:'setConfig',key:'admin_password',value:nw});
+      if(r.ok){STATE.adminPassword=nw;document.getElementById('cur-admin-pw').value='';document.getElementById('new-admin-pw').value='';toast('관리자 비밀번호가 변경되었습니다.','success')}
+      else toast('변경 실패: '+(r.error||''),'error');
+    } else {
+      STATE.adminPassword=nw;
+      document.getElementById('cur-admin-pw').value='';document.getElementById('new-admin-pw').value='';
+      lsSave();
+      toast('관리자 비밀번호가 변경됐습니다 ✓','success');
+    }
   }
   async function testConnection() {
     const el=document.getElementById('sheets-status'); el.textContent='연결 테스트 중...';
@@ -1165,8 +1227,12 @@ button{cursor:pointer;font-family:inherit}
 
   window.addEventListener('DOMContentLoaded',()=>{
     STATE.loggedIn=false; STATE.adminLoggedIn=false;
+
+    // localStorage에서 저장된 링크·심포지엄·비밀번호 복원
+    lsLoad();
+
     showPage('login-page');
-    renderAllPanels(); // 링크 없이 초기 렌더
+    renderAllPanels(); // 저장된 링크로 초기 렌더
   });
 </script>
 </body>
