@@ -4,9 +4,6 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>무엇이든 물어보령</title>
-<meta property="og:type" content="website"/>
-<meta property="og:title" content="무엇이든 물어보령 🔵"/>
-<meta property="og:description" content="고혈압, 당뇨병, 이상지질혈증 AI 전문 상담 서비스 | (주)보령 마케팅1그룹"/>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Apple SD Gothic Neo','Noto Sans KR',sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse 80% 60% at 20% 10%,rgba(0,163,224,.18) 0%,transparent 60%),radial-gradient(ellipse 60% 80% at 85% 90%,rgba(0,87,168,.22) 0%,transparent 55%),linear-gradient(160deg,#002060 0%,#003087 45%,#0057B8 100%);padding:24px 16px}
@@ -27,13 +24,12 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR',sans-serif;min-height:100v
 @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
 .btn{width:100%;padding:13px;background:linear-gradient(135deg,#003087,#00A3E0);color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;transition:opacity .15s;margin-bottom:14px}
 .btn:hover{opacity:.88}
+.btn:disabled{opacity:.5;cursor:not-allowed}
 .note{text-align:center;font-size:11.5px;color:#94A3B8;margin-bottom:10px}
 .card-bottom{display:flex;flex-direction:column;align-items:center;gap:12px}
 .admin-btn{font-size:12px;font-weight:600;color:#94A3B8;background:none;border:1px solid #E2E8F0;border-radius:7px;padding:7px 18px;cursor:pointer;transition:all .15s}
 .admin-btn:hover{color:#003087;border-color:#003087;background:#F0F6FF}
 .ci-logo{width:140px;height:auto;display:block}
-
-/* 오버레이 */
 .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:99;align-items:center;justify-content:center;padding:16px}
 .overlay.open{display:flex}
 .modal{background:#fff;border-radius:18px;padding:28px 24px;width:100%;max-width:500px;box-shadow:0 20px 60px rgba(0,0,0,.3);max-height:90vh;overflow-y:auto}
@@ -47,14 +43,14 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR',sans-serif;min-height:100v
 .mbtn{display:flex;gap:8px;margin-top:16px}
 .btn-cancel{flex:1;padding:11px;border:1.5px solid #E2E8F0;background:#fff;border-radius:9px;font-size:14px;font-weight:600;cursor:pointer;color:#475569}
 .btn-s{padding:9px 18px;background:linear-gradient(135deg,#003087,#00A3E0);color:#fff;border:none;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer}
+.btn-s:disabled{opacity:.5;cursor:not-allowed}
 .log-wrap{overflow-x:auto;margin-top:8px}
 .log-table{width:100%;border-collapse:collapse;font-size:12px;min-width:300px}
 .log-table th{background:#F1F5F9;padding:7px 10px;text-align:left;font-weight:700;color:#475569;border-bottom:2px solid #E2E8F0;white-space:nowrap}
 .log-table td{padding:7px 10px;border-bottom:1px solid #F1F5F9;color:#1E293B;vertical-align:top}
-.log-table tr:hover td{background:#F8FAFC}
 .log-empty{text-align:center;color:#94A3B8;padding:20px;font-size:12.5px}
-.notice{background:#FFF7ED;border:1px solid #FED7AA;border-radius:10px;padding:12px;font-size:12px;color:#92400E;line-height:1.6;margin-bottom:14px;display:none}
-.notice strong{display:block;font-size:13px;margin-bottom:3px}
+.url-box{background:#F0F9FF;border:1px solid #BAE6FD;border-radius:10px;padding:12px;font-size:12px;color:#0C4A6E;line-height:1.6;margin-bottom:14px}
+.url-box strong{display:block;font-size:13px;margin-bottom:3px;color:#003087}
 </style>
 </head>
 <body>
@@ -77,7 +73,7 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR',sans-serif;min-height:100v
       <input id="pw" type="password" placeholder="비밀번호 입력" maxlength="30"
         onkeydown="if(event.key==='Enter')login()"/>
     </div>
-    <button class="btn" onclick="login()">로그인 → 챗봇 접속</button>
+    <button class="btn" id="login-btn" onclick="login()">로그인 → 챗봇 접속</button>
     <p class="note">문의: CVM2팀 이정훈</p>
     <div class="card-bottom">
       <button class="admin-btn" onclick="openAdmin()">관리자 페이지</button>
@@ -90,17 +86,17 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR',sans-serif;min-height:100v
 <div id="admin-overlay" class="overlay">
   <div class="modal">
     <div class="modal-title">관리자 페이지</div>
-    <div class="modal-desc">비밀번호 변경 및 접속 로그를 확인합니다.</div>
+    <div class="modal-desc">비밀번호는 Google Sheets에 저장되어 모든 담당자에게 동일하게 적용됩니다.</div>
 
     <!-- ① Script URL -->
     <div class="msec">
-      <div class="msec-title">① Google Apps Script URL 설정</div>
-      <div id="url-notice" class="notice">
-        <strong>⚠️ 연동 필요</strong>
-        URL을 입력해야 비밀번호가 모든 담당자에게 적용되고 로그를 볼 수 있습니다.
+      <div class="msec-title">① Google Apps Script URL</div>
+      <div id="url-box" class="url-box" style="display:none">
+        <strong>✓ 연동됨</strong>
+        <span id="url-preview"></span>
       </div>
       <div class="field" style="margin-bottom:6px">
-        <label>Script URL</label>
+        <label>Script 배포 URL</label>
         <input id="script-url-input" type="text" placeholder="https://script.google.com/macros/s/.../exec" style="font-size:12px"/>
       </div>
       <button class="btn-s" onclick="saveScriptUrl()">저장</button>
@@ -115,13 +111,13 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR',sans-serif;min-height:100v
         <input id="adm-pw" type="password" placeholder="관리자 비밀번호 (기본값: admin1234)"
           onkeydown="if(event.key==='Enter')verifyAdmin()"/>
       </div>
-      <button class="btn-s" onclick="verifyAdmin()">인증</button>
+      <button class="btn-s" id="auth-btn" onclick="verifyAdmin()">인증</button>
       <div id="auth-st" class="st"></div>
     </div>
 
-    <!-- ③ 비밀번호 변경 (인증 후) -->
+    <!-- ③ 비밀번호 변경 -->
     <div id="pw-sec" class="msec" style="display:none">
-      <div class="msec-title">③ 담당자 비밀번호 변경</div>
+      <div class="msec-title">③ 담당자 비밀번호 변경 (전체 적용)</div>
       <div class="field">
         <label>새 비밀번호</label>
         <input id="new-pw1" type="password" placeholder="새 비밀번호"/>
@@ -131,14 +127,14 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR',sans-serif;min-height:100v
         <input id="new-pw2" type="password" placeholder="확인"
           onkeydown="if(event.key==='Enter')changePw()"/>
       </div>
-      <button class="btn-s" onclick="changePw()">전체 변경 적용</button>
+      <button class="btn-s" id="pw-btn" onclick="changePw()">모든 담당자에게 적용</button>
       <div id="pw-st" class="st"></div>
     </div>
 
-    <!-- ④ 접속 로그 (인증 후) -->
+    <!-- ④ 접속 로그 -->
     <div id="log-sec" class="msec" style="display:none">
       <div class="msec-title">④ 접속 로그</div>
-      <button onclick="loadLogs()" style="font-size:12px;padding:6px 14px;border:1px solid #E2E8F0;border-radius:7px;background:#fff;cursor:pointer;color:#475569">🔄 로그 불러오기</button>
+      <button id="log-btn" onclick="loadLogs()" style="font-size:12px;padding:6px 14px;border:1px solid #E2E8F0;border-radius:7px;background:#fff;cursor:pointer;color:#475569">🔄 로그 불러오기</button>
       <div id="log-container" class="log-wrap">
         <div class="log-empty">위 버튼을 클릭하면 접속 기록이 표시됩니다.</div>
       </div>
@@ -151,46 +147,64 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR',sans-serif;min-height:100v
 </div>
 
 <script>
+// ★ 여기에 Script URL을 직접 입력하면 localStorage 없이도 동작합니다
+// 예: const FIXED_URL = 'https://script.google.com/macros/s/xxx/exec';
+const FIXED_URL = '';
+
 const NB = 'https://notebooklm.google.com/notebook/4fa1e039-81aa-495d-8257-fa06a16b5dda?authuser=1';
 const LS_URL = 'boryung_script_url';
-const LS_PW  = 'boryung_local_pw';
 const ADMIN_PW = 'admin1234';
 let _auth = false;
 
-function getUrl(){ return localStorage.getItem(LS_URL)||''; }
+// URL 가져오기: 코드에 직접 입력된 값 우선, 없으면 localStorage
+function getUrl(){
+  return FIXED_URL || localStorage.getItem(LS_URL) || '';
+}
 
 function saveScriptUrl(){
   const v = document.getElementById('script-url-input').value.trim();
   const st = document.getElementById('url-st');
   if(!v.startsWith('https://')){ st.textContent='올바른 URL을 입력해 주세요.'; st.className='st st-err'; return; }
   localStorage.setItem(LS_URL, v);
-  st.textContent='✓ 저장됐습니다.'; st.className='st st-ok';
-  document.getElementById('url-notice').style.display='none';
+  st.textContent='✓ 저장됐습니다. 이제 로그인 시 서버에서 비밀번호를 확인합니다.'; st.className='st st-ok';
+  document.getElementById('url-box').style.display='block';
+  document.getElementById('url-preview').textContent=v.substring(0,50)+'...';
 }
 
-async function gsFetch(params){
-  const url = getUrl();
-  if(!url) return {ok:false, error:'SCRIPT_URL 미설정'};
-  try{
-    const res = await fetch(url+'?'+new URLSearchParams(params));
-    return await res.json();
-  }catch(e){ return {ok:false, error:e.message}; }
-}
-
+// ★ 핵심: 로그인은 항상 서버(Google Sheets)에서 확인
 async function login(){
   const emp = document.getElementById('empid').value.trim();
   const pw  = document.getElementById('pw').value;
   const err = document.getElementById('err');
+  const btn = document.getElementById('login-btn');
+
   if(!emp){ showErr(err,'사번을 입력해 주세요.'); return; }
+  if(!pw){ showErr(err,'비밀번호를 입력해 주세요.'); return; }
+
   const url = getUrl();
+
+  // Script URL이 없으면 기본 비밀번호 1111로 로컬 체크 (임시)
   if(!url){
-    const localPw = localStorage.getItem(LS_PW)||'1111';
-    if(pw!==localPw){ showErr(err,'비밀번호가 올바르지 않습니다.'); return; }
-    window.location.href=NB; return;
+    if(pw==='1111'){ window.location.href=NB; }
+    else{ showErr(err,'비밀번호가 올바르지 않습니다. (Script URL 미설정)'); }
+    return;
   }
-  const r = await gsFetch({action:'login', empid:emp, pw:pw});
-  if(r.ok){ window.location.href=NB; }
-  else{ showErr(err, r.error||'비밀번호가 올바르지 않습니다.'); }
+
+  // Script URL 있으면 반드시 서버에서 확인
+  btn.disabled=true; btn.textContent='확인 중...';
+  try{
+    const res = await fetch(url+'?'+new URLSearchParams({action:'login',empid:emp,pw:pw}));
+    const r = await res.json();
+    if(r.ok){
+      window.location.href=NB;
+    } else {
+      showErr(err, r.error||'비밀번호가 올바르지 않습니다.');
+      btn.disabled=false; btn.textContent='로그인 → 챗봇 접속';
+    }
+  }catch(e){
+    showErr(err,'서버 연결 오류: '+e.message);
+    btn.disabled=false; btn.textContent='로그인 → 챗봇 접속';
+  }
 }
 
 function showErr(el,msg){
@@ -207,7 +221,8 @@ function openAdmin(){
   document.getElementById('pw-sec').style.display='none';
   document.getElementById('log-sec').style.display='none';
   document.getElementById('adm-pw').value='';
-  document.getElementById('url-notice').style.display=url?'none':'block';
+  document.getElementById('url-box').style.display=url?'block':'none';
+  if(url) document.getElementById('url-preview').textContent=url.substring(0,50)+'...';
   document.getElementById('admin-overlay').classList.add('open');
   setTimeout(()=>document.getElementById('adm-pw').focus(),200);
 }
@@ -228,31 +243,55 @@ async function changePw(){
   const p1=document.getElementById('new-pw1').value;
   const p2=document.getElementById('new-pw2').value;
   const st=document.getElementById('pw-st');
+  const btn=document.getElementById('pw-btn');
   if(!p1){ st.textContent='새 비밀번호를 입력해 주세요.'; st.className='st st-err'; return; }
   if(p1!==p2){ st.textContent='비밀번호가 일치하지 않습니다.'; st.className='st st-err'; return; }
+
   const url=getUrl();
-  if(!url){
-    localStorage.setItem(LS_PW,p1);
-    st.textContent='✓ 저장됐습니다. (Script 미연동 — 이 기기에서만 적용)'; st.className='st st-ok';
-    return;
+  if(!url){ st.textContent='❌ Script URL을 먼저 설정해 주세요.'; st.className='st st-err'; return; }
+
+  btn.disabled=true; btn.textContent='저장 중...';
+  st.textContent='서버에 저장 중...'; st.className='st';
+
+  try{
+    const res=await fetch(url+'?'+new URLSearchParams({action:'setPw',pw:p1}));
+    const r=await res.json();
+    if(r.ok){
+      st.textContent='✓ Google Sheets에 저장됐습니다. 모든 담당자에게 즉시 적용됩니다.'; st.className='st st-ok';
+      document.getElementById('new-pw1').value='';
+      document.getElementById('new-pw2').value='';
+    } else {
+      st.textContent='❌ '+(r.error||'저장 실패'); st.className='st st-err';
+    }
+  }catch(e){
+    st.textContent='❌ 서버 연결 오류: '+e.message; st.className='st st-err';
   }
-  st.textContent='저장 중...'; st.className='st';
-  const r=await gsFetch({action:'setPw',pw:p1});
-  if(r.ok){ st.textContent='✓ 모든 담당자의 비밀번호가 변경됐습니다.'; st.className='st st-ok'; document.getElementById('new-pw1').value=''; document.getElementById('new-pw2').value=''; }
-  else{ st.textContent='❌ '+(r.error||'저장 실패'); st.className='st st-err'; }
+  btn.disabled=false; btn.textContent='모든 담당자에게 적용';
 }
 
 async function loadLogs(){
   const cont=document.getElementById('log-container');
+  const btn=document.getElementById('log-btn');
+  const url=getUrl();
+  if(!url){ cont.innerHTML='<div class="log-empty">❌ Script URL을 먼저 설정해 주세요.</div>'; return; }
+
+  btn.disabled=true; btn.textContent='불러오는 중...';
   cont.innerHTML='<div class="log-empty">불러오는 중...</div>';
-  const r=await gsFetch({action:'getLogs'});
-  if(!r.ok){ cont.innerHTML=`<div class="log-empty">❌ ${r.error||'로그를 불러올 수 없습니다.'}</div>`; return; }
-  const rows=r.logs||[];
-  if(!rows.length){ cont.innerHTML='<div class="log-empty">접속 기록이 없습니다.</div>'; return; }
-  let html='<table class="log-table"><thead><tr><th>시각</th><th>사번</th><th>결과</th></tr></thead><tbody>';
-  rows.forEach(r=>{ html+=`<tr><td>${r[0]||''}</td><td>${r[1]||''}</td><td>${r[2]||''}</td></tr>`; });
-  html+='</tbody></table>';
-  cont.innerHTML=html;
+
+  try{
+    const res=await fetch(url+'?'+new URLSearchParams({action:'getLogs'}));
+    const r=await res.json();
+    if(!r.ok){ cont.innerHTML=`<div class="log-empty">❌ ${r.error||'로그를 불러올 수 없습니다.'}</div>`; return; }
+    const rows=r.logs||[];
+    if(!rows.length){ cont.innerHTML='<div class="log-empty">접속 기록이 없습니다.</div>'; return; }
+    let html='<table class="log-table"><thead><tr><th>시각</th><th>사번</th><th>결과</th></tr></thead><tbody>';
+    rows.forEach(row=>{ html+=`<tr><td>${row[0]||''}</td><td>${row[1]||''}</td><td>${row[2]||''}</td></tr>`; });
+    html+='</tbody></table>';
+    cont.innerHTML=html;
+  }catch(e){
+    cont.innerHTML=`<div class="log-empty">❌ 연결 오류: ${e.message}</div>`;
+  }
+  btn.disabled=false; btn.textContent='🔄 로그 불러오기';
 }
 </script>
 </body>
