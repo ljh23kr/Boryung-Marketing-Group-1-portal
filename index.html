@@ -122,8 +122,13 @@ async function login() {
   if(!emp) { showErr(err,'사번을 입력해 주세요.'); return; }
   if(emp.length !== 5) { showErr(err,'사번은 5자리로 입력해 주세요.'); return; }
   btn.disabled=true; btn.textContent='이동 중...';
-  // 사번 서버에 기록 (비동기 — 이동을 막지 않음)
-  gsFetch({action:'log', empid:emp});
+  // 로그 저장 완료 후 이동 (최대 3초 대기)
+  try {
+    await Promise.race([
+      gsFetch({action:'log', empid:emp}),
+      new Promise(resolve => setTimeout(resolve, 3000))
+    ]);
+  } catch(e) {}
   window.location.href = NB;
 }
 
